@@ -1,303 +1,306 @@
--- OTIMIZAÇÃO AVANÇADA (sem gargalos + mais eficiente + mesmas funções)
+-- [[ SYS_HUB DEFINITIVE EDITION v6.2 - XENO PATCH + FINAL ANTI-KICK ENGINE ]]
 
-local uiName="Sys_"..math.random(100,999)
-local CoreGui,Players,RunService,UIS,Lighting=game:GetService("CoreGui"),game:GetService("Players"),game:GetService("RunService"),game:GetService("UserInputService"),game:GetService("Lighting")
-local LP=Players.LocalPlayer
-local Mouse=LP:GetMouse()
-local Camera=workspace.CurrentCamera
+local uiName = "Sys_" .. math.random(100, 999)
+local CoreGui = game:GetService("CoreGui")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
+local Lighting = game:GetService("Lighting")
 
--- CLEAN
-pcall(function()
-    for _,v in ipairs(CoreGui:GetChildren()) do
-        if v:IsA("ScreenGui") and (v.Name:find("Sys_") or v.Name=="LobocatjHub_Final") then v:Destroy() end
-    end
-end)
+local LP = Players.LocalPlayer
+local Mouse = LP:GetMouse()
+local Camera = workspace.CurrentCamera
 
--- STATE
-local S={
-Aimbot=false,Hitbox=false,InfJump=false,Noclip=false,
-HitboxSize=15,FOV=200,Smooth=0.15,Speed=16,Jump=50,
-FullBright=false,NoFog=false,ESP=false
+-- Limpeza de versões anteriores
+for _, v in ipairs(CoreGui:GetChildren()) do
+    if v.Name:find("Sys_") then v:Destroy() end
+end
+
+-- [[ ESTADO GLOBAL ]]
+local S = {
+    Aimbot=false, FOV=150, Smooth=5,
+    Hitbox=false, HitboxSize=15,
+    MyHitboxSize=2,
+    Speed=16, Jump=50, InfJump=false,
+    Fly=false, FlySpeed=50,
+    Noclip=false, FullBright=false,
+    Waypoints={}
 }
 
--- CACHE PLAYERS
-local playerCache={}
-local function updatePlayers()
-    playerCache={}
-    for _,p in ipairs(Players:GetPlayers()) do
-        if p~=LP then playerCache[#playerCache+1]=p end
-    end
-end
-updatePlayers()
-Players.PlayerAdded:Connect(updatePlayers)
-Players.PlayerRemoving:Connect(updatePlayers)
+-- [[ UI SYSTEM v6.2 DESIGN ]]
+local SG = Instance.new("ScreenGui", CoreGui)
+SG.Name = uiName
+SG.ResetOnSpawn = false
 
--- AIMBOT (menos alocação)
-local function getClosest()
-    local cx,cy=Mouse.X,Mouse.Y
-    local closest,dist=nil,S.FOV
+local Main = Instance.new("Frame", SG)
+Main.Size = UDim2.fromOffset(550, 420)
+Main.Position = UDim2.fromScale(0.5, 0.5)
+Main.AnchorPoint = Vector2.new(0.5, 0.5)
+Main.Active = true
+Main.Draggable = true 
+Main.BackgroundColor3 = Color3.fromRGB(15, 15, 18)
+Instance.new("UICorner", Main)
 
-    for i=1,#playerCache do
-        local ch=playerCache[i].Character
-        local hrp=ch and ch:FindFirstChild("HumanoidRootPart")
-        if hrp then
-            local pos,vis=Camera:WorldToViewportPoint(hrp.Position)
-            if vis then
-                local dx,dy=pos.X-cx,pos.Y-cy
-                local mag=(dx*dx+dy*dy)^0.5
-                if mag<dist then dist,closest=mag,hrp end
-            end
-        end
-    end
-    return closest
-end
+local Close = Instance.new("TextButton", Main)
+Close.Size = UDim2.fromOffset(30, 25)
+Close.Position = UDim2.new(1, -35, 0, 5)
+Close.Text = "X"
+Close.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+Close.TextColor3 = Color3.new(1,1,1)
+Instance.new("UICorner", Close)
+Close.MouseButton1Click:Connect(function() SG.Enabled = false end)
 
--- UI
-local SG=Instance.new("ScreenGui",CoreGui);SG.Name=uiName
-local Main=Instance.new("Frame",SG)
-Main.Size=UDim2.fromOffset(430,320)
-Main.Position=UDim2.fromScale(0.5,0.5)-UDim2.fromOffset(215,160)
-Main.BackgroundColor3=Color3.fromRGB(18,18,22)
-Main.Active,Main.Draggable=true,true
-Instance.new("UICorner",Main)
+local Sidebar = Instance.new("Frame", Main)
+Sidebar.Size = UDim2.new(0, 150, 1, 0)
+Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+Instance.new("UICorner", Sidebar)
 
-local Top=Instance.new("Frame",Main)
-Top.Size=UDim2.new(1,0,0,28)
-Top.BackgroundColor3=Color3.fromRGB(25,25,30)
+local Container = Instance.new("Frame", Main)
+Container.Size = UDim2.new(1, -170, 1, -20)
+Container.Position = UDim2.new(0, 160, 0, 10)
+Container.BackgroundTransparency = 1
 
-local Close=Instance.new("TextButton",Top)
-Close.Size=UDim2.fromOffset(25,18)
-Close.Position=UDim2.new(1,-28,0.5,-9)
-Close.Text="X"
-Close.BackgroundColor3=Color3.fromRGB(140,0,0)
-Close.TextColor3=Color3.new(1,1,1)
-Close.Font=Enum.Font.GothamBold
-Instance.new("UICorner",Close)
+local Tabs = {}
+function AddTab(name)
+    local b = Instance.new("TextButton", Sidebar)
+    b.Size = UDim2.new(0.9, 0, 0, 35)
+    b.Position = UDim2.new(0.05, 0, 0, #Sidebar:GetChildren() * 40 - 35)
+    b.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    b.Text = name
+    b.TextColor3 = Color3.new(1,1,1)
+    Instance.new("UICorner", b)
 
-local Side=Instance.new("Frame",Main)
-Side.Size=UDim2.new(0,115,1,-28)
-Side.Position=UDim2.new(0,0,0,28)
-Side.BackgroundColor3=Color3.fromRGB(22,22,26)
-Instance.new("UIListLayout",Side).Padding=UDim.new(0,4)
-
-local Content=Instance.new("Frame",Main)
-Content.Size=UDim2.new(1,-115,1,-28)
-Content.Position=UDim2.new(0,115,0,28)
-Content.BackgroundTransparency=1
-
-local Tabs={}
-local function tab(n)
-    local b=Instance.new("TextButton",Side)
-    b.Size=UDim2.new(1,0,0,32)
-    b.Text=n
-    b.BackgroundColor3=Color3.fromRGB(35,35,40)
-    b.TextColor3=Color3.new(1,1,1)
-    b.Font=Enum.Font.GothamBold
-
-    local f=Instance.new("ScrollingFrame",Content)
-    f.Size=UDim2.new(1,0,1,0)
-    f.ScrollBarThickness=3
-    f.CanvasSize=UDim2.new(0,0,0,0)
-    f.Visible=false
-    f.BackgroundTransparency=1
-
-    local l=Instance.new("UIListLayout",f)
-    l.Padding=UDim.new(0,5)
-    l:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        f.CanvasSize=UDim2.new(0,0,0,l.AbsoluteContentSize.Y+5)
-    end)
+    local p = Instance.new("ScrollingFrame", Container)
+    p.Size = UDim2.fromScale(1, 1)
+    p.BackgroundTransparency = 1
+    p.Visible = false
+    p.ScrollBarThickness = 0
+    Instance.new("UIListLayout", p).Padding = UDim.new(0, 8)
 
     b.MouseButton1Click:Connect(function()
-        for _,v in pairs(Tabs) do v.Visible=false end
-        f.Visible=true
+        for _, v in pairs(Tabs) do
+            v.P.Visible = false
+            v.B.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+        end
+        p.Visible = true
+        b.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
     end)
 
-    Tabs[n]=f
-    return f
+    Tabs[name] = {P = p, B = b}
+    return p
 end
 
-local combat,move,world,extra=tab("Combat"),tab("Move"),tab("World"),tab("Extra")
-combat.Visible=true
+function AddNumeric(tab, text, key)
+    local f = Instance.new("Frame", tab)
+    f.Size = UDim2.new(1, 0, 0, 40)
+    f.BackgroundTransparency = 1
 
--- COMPONENTES
-local function toggle(p,t,key)
-    local s=false
-    local b=Instance.new("TextButton",p)
-    b.Size=UDim2.new(1,-8,0,30)
-    b.Text=t.." [OFF]"
-    b.BackgroundColor3=Color3.fromRGB(45,45,50)
-    b.TextColor3=Color3.new(1,1,1)
-    b.Font=Enum.Font.Gotham
+    local l = Instance.new("TextLabel", f)
+    l.Size = UDim2.new(0.6, 0, 1, 0)
+    l.Text = text
+    l.TextColor3 = Color3.new(1,1,1)
+    l.BackgroundTransparency = 1
+    l.TextXAlignment = 0
+
+    local box = Instance.new("TextBox", f)
+    box.Size = UDim2.fromOffset(70, 25)
+    box.Position = UDim2.new(1, -75, 0.5, -12)
+    box.BackgroundColor3 = Color3.fromRGB(40,40,45)
+    box.Text = tostring(S[key])
+    box.TextColor3 = Color3.new(0,1,0)
+    Instance.new("UICorner", box)
+
+    box.FocusLost:Connect(function()
+        S[key] = tonumber(box.Text:match("%d+%.?%d*")) or S[key]
+    end)
+end
+
+function AddToggle(tab, text, key)
+    local b = Instance.new("TextButton", tab)
+    b.Size = UDim2.new(1, 0, 0, 35)
+    b.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+    b.Text = text
+    b.TextColor3 = Color3.new(1,1,1)
+    Instance.new("UICorner", b)
 
     b.MouseButton1Click:Connect(function()
-        s=not s; S[key]=s
-        b.Text=t..(s and " [ON]" or " [OFF]")
-        b.BackgroundColor3=s and Color3.fromRGB(0,140,90) or Color3.fromRGB(45,45,50)
+        S[key] = not S[key]
+        b.BackgroundColor3 = S[key] and Color3.fromRGB(0, 150, 80) or Color3.fromRGB(30, 30, 35)
     end)
 end
 
-local function slider(p,t,min,max,key)
-    local v=S[key]
-    local f=Instance.new("Frame",p)
-    f.Size=UDim2.new(1,-8,0,40)
-    f.BackgroundColor3=Color3.fromRGB(40,40,45)
+-- Configuração das Abas
+local combat = AddTab("Combate")
+local player = AddTab("Jogador")
+local way = AddTab("Waypoints")
 
-    local txt=Instance.new("TextLabel",f)
-    txt.Size=UDim2.new(1,0,0,18)
-    txt.Text=t..": "..v
-    txt.BackgroundTransparency=1
-    txt.TextColor3=Color3.new(1,1,1)
+AddToggle(combat, "Aimbot Assist", "Aimbot")
+AddNumeric(combat, "Raio FOV", "FOV")
+AddToggle(combat, "Hitbox Inimiga", "Hitbox")
+AddNumeric(combat, "Tamanho Inimigo", "HitboxSize")
 
-    local bar=Instance.new("Frame",f)
-    bar.Size=UDim2.new(1,-8,0,6)
-    bar.Position=UDim2.new(0,4,1,-10)
-    bar.BackgroundColor3=Color3.fromRGB(70,70,75)
+AddNumeric(player, "Velocidade", "Speed")
+AddNumeric(player, "Pulo", "Jump")
+AddToggle(player, "Voo (Fly)", "Fly")
+AddNumeric(player, "Velocidade Voo", "FlySpeed")
+AddToggle(player, "Atravessar (Noclip)", "Noclip")
+AddNumeric(player, "Minha Hitbox", "MyHitboxSize")
 
-    local fill=Instance.new("Frame",bar)
-    fill.Size=UDim2.new(v/max,0,1,0)
-    fill.BackgroundColor3=Color3.fromRGB(0,150,100)
+-- [[ WAYPOINTS ]]
+local wpInput = Instance.new("TextBox", way)
+wpInput.Size = UDim2.new(1, 0, 0, 30)
+wpInput.PlaceholderText = "Nome do local..."
+wpInput.BackgroundColor3 = Color3.fromRGB(40,40,45)
+wpInput.TextColor3 = Color3.new(1,1,1)
 
-    bar.InputBegan:Connect(function(i)
-        if i.UserInputType==Enum.UserInputType.MouseButton1 then
-            local c
-            c=UIS.InputChanged:Connect(function(m)
-                if m.UserInputType==Enum.UserInputType.MouseMovement then
-                    local pct=(m.Position.X-bar.AbsolutePosition.X)/bar.AbsoluteSize.X
-                    pct=math.clamp(pct,0,1)
-                    v=math.floor(min+(max-min)*pct)
-                    S[key]=v
-                    fill.Size=UDim2.new(pct,0,1,0)
-                    txt.Text=t..": "..v
-                end
-            end)
-            UIS.InputEnded:Once(function() c:Disconnect() end)
-        end
-    end)
+local addWp = Instance.new("TextButton", way)
+addWp.Size = UDim2.new(1, 0, 0, 30)
+addWp.Text = "Salvar Posição Atual"
+addWp.BackgroundColor3 = Color3.fromRGB(0, 150, 150)
+addWp.TextColor3 = Color3.new(1,1,1)
+
+local wpList = Instance.new("ScrollingFrame", way)
+wpList.Size = UDim2.new(1, 0, 0, 200)
+wpList.BackgroundTransparency = 1
+Instance.new("UIListLayout", wpList).Padding = UDim.new(0, 5)
+
+local function RefreshWaypoints()
+    for _, v in ipairs(wpList:GetChildren()) do if v:IsA("Frame") then v:Destroy() end end
+    for i, w in ipairs(S.Waypoints) do
+        local f = Instance.new("Frame", wpList)
+        f.Size = UDim2.new(1, 0, 0, 35)
+        f.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+
+        local t = Instance.new("TextLabel", f)
+        t.Size = UDim2.new(0.4, 0, 1, 0)
+        t.Text = " " .. w.Name
+        t.TextColor3 = Color3.new(1,1,1)
+        t.BackgroundTransparency = 1
+        t.TextXAlignment = 0
+
+        local go = Instance.new("TextButton", f)
+        go.Size = UDim2.new(0.25, 0, 0.8, 0)
+        go.Position = UDim2.new(0.45, 0, 0.1, 0)
+        go.Text = "IR"
+        go.BackgroundColor3 = Color3.fromRGB(0, 150, 80)
+        Instance.new("UICorner", go)
+
+        local del = Instance.new("TextButton", f)
+        del.Size = UDim2.new(0.25, 0, 0.8, 0)
+        del.Position = UDim2.new(0.72, 0, 0.1, 0)
+        del.Text = "DEL"
+        del.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
+        Instance.new("UICorner", del)
+
+        go.MouseButton1Click:Connect(function()
+            if LP.Character then LP.Character:MoveTo(w.Pos) end
+        end)
+
+        del.MouseButton1Click:Connect(function()
+            table.remove(S.Waypoints, i)
+            RefreshWaypoints()
+        end)
+    end
 end
 
-local function button(p,t,cb)
-    local b=Instance.new("TextButton",p)
-    b.Size=UDim2.new(1,-8,0,30)
-    b.Text=t
-    b.BackgroundColor3=Color3.fromRGB(60,60,65)
-    b.TextColor3=Color3.new(1,1,1)
-    b.Font=Enum.Font.Gotham
-    b.MouseButton1Click:Connect(cb)
-end
-
--- UI ELEMENTS
-toggle(combat,"Aimbot","Aimbot")
-toggle(combat,"Hitbox","Hitbox")
-slider(combat,"FOV",50,500,"FOV")
-slider(combat,"Smooth",1,100,"Smooth")
-
-toggle(move,"Inf Jump","InfJump")
-toggle(move,"Noclip","Noclip")
-slider(move,"Speed",16,100,"Speed")
-slider(move,"Jump",50,150,"Jump")
-
-toggle(world,"FullBright","FullBright")
-toggle(world,"No Fog","NoFog")
-
-toggle(extra,"ESP","ESP")
-button(extra,"Gravity 0",function() workspace.Gravity=workspace.Gravity==0 and 196.2 or 0 end)
-
--- FOV CIRCLE (lazy render)
-local circle=Drawing.new("Circle")
-circle.Thickness=1
-circle.NumSides=40
-circle.Filled=false
-
--- LOOPS
-RunService.RenderStepped:Connect(function()
-    local mx,my=Mouse.X,Mouse.Y+36
-
-    if S.Aimbot then
-        circle.Visible=true
-        circle.Position=Vector2.new(mx,my)
-        circle.Radius=S.FOV
-    else
-        circle.Visible=false
-    end
-
-    if S.Aimbot and UIS:IsMouseButtonPressed(Enum.UserInputType.MouseButton2) then
-        local t=getClosest()
-        if t then
-            Camera.CFrame=Camera.CFrame:Lerp(
-                CFrame.new(Camera.CFrame.Position,t.Position),
-                S.Smooth/100
-            )
-        end
-    end
-
-    local char=LP.Character
-    local hum=char and char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum.WalkSpeed=S.Speed
-        hum.JumpPower=S.Jump
+addWp.MouseButton1Click:Connect(function()
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        table.insert(S.Waypoints, { Name = wpInput.Text ~= "" and wpInput.Text or "Local "..#S.Waypoints+1, Pos = hrp.Position })
+        wpInput.Text = ""
+        RefreshWaypoints()
     end
 end)
 
+-- [[ LOOP DE FÍSICA E MINHA HITBOX ]]
 RunService.Stepped:Connect(function()
-    if S.Noclip then
-        local char=LP.Character
-        if char then
-            for _,v in ipairs(char:GetChildren()) do -- otimizado (não usa GetDescendants)
-                if v:IsA("BasePart") then v.CanCollide=false end
+    local char = LP.Character
+    local hrp = char and char:FindFirstChild("HumanoidRootPart")
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+    if hrp and hum then
+        -- Speed & Noclip
+        if S.Speed > 16 and not S.Fly then
+            local dir = hum.MoveDirection
+            if dir.Magnitude > 0 then
+                hrp.Velocity = Vector3.new(dir.X * S.Speed, hrp.Velocity.Y, dir.Z * S.Speed)
+            end
+        end
+        if S.Noclip then
+            for _, p in pairs(char:GetDescendants()) do
+                if p:IsA("BasePart") then p.CanCollide = false end
+            end
+        end
+
+        -- CORREÇÃO MINHA HITBOX
+        if S.MyHitboxSize ~= 2 then
+            hrp.Size = Vector3.new(S.MyHitboxSize, S.MyHitboxSize, S.MyHitboxSize)
+            hum.HipHeight = S.MyHitboxSize / 2
+        else
+            -- Reset real para o padrão se for 2
+            if hrp.Size ~= Vector3.new(2, 2, 1) then
+                hrp.Size = Vector3.new(2, 2, 1)
+                hum.HipHeight = 0
             end
         end
     end
 end)
+
+-- [[ HITBOX INIMIGA - FIX DE DESATIVAÇÃO ]]
+local playerCache = {}
+local function updateCache()
+    table.clear(playerCache)
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LP then table.insert(playerCache, p) end
+    end
+end
+Players.PlayerAdded:Connect(updateCache)
+Players.PlayerRemoving:Connect(updateCache)
+updateCache()
 
 task.spawn(function()
-    while task.wait(0.8) do -- reduzido carga
-        if S.Hitbox then
-            for i=1,#playerCache do
-                local ch=playerCache[i].Character
-                local r=ch and ch:FindFirstChild("HumanoidRootPart")
-                if r then
-                    r.Size=Vector3.new(S.HitboxSize,S.HitboxSize,S.HitboxSize)
-                    r.Transparency=0.7
-                    r.CanCollide=false
+    while task.wait(0.3) do
+        for _, p in ipairs(playerCache) do
+            local root = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                if S.Hitbox then
+                    root.Size = Vector3.new(S.HitboxSize, S.HitboxSize, S.HitboxSize)
+                    root.Transparency = 0.8
+                    root.CanCollide = false
+                else
+                    -- FORÇA A VOLTA PARA O PADRÃO QUANDO DESATIVADO
+                    if root.Size ~= Vector3.new(2, 2, 1) then
+                        root.Size = Vector3.new(2, 2, 1)
+                        root.Transparency = 0
+                        root.CanCollide = true
+                    end
                 end
             end
         end
-
-        if S.FullBright or S.NoFog then
-            Lighting.FogEnd=100000
-            if S.FullBright then
-                Lighting.Brightness=2
-                Lighting.ClockTime=14
-            end
-        end
     end
 end)
 
--- INPUTS
+-- Jump, Fly e Atalho
 UIS.JumpRequest:Connect(function()
-    if S.InfJump then
-        local h=LP.Character and LP.Character:FindFirstChildOfClass("Humanoid")
-        if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end
-    end
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if hrp and S.Jump > 50 then hrp.Velocity = Vector3.new(hrp.Velocity.X, S.Jump, hrp.Velocity.Z) end
 end)
 
-Mouse.Button1Down:Connect(function()
-    if UIS:IsKeyDown(Enum.KeyCode.LeftControl) and Mouse.Target then
-        local c=LP.Character
-        if c then c:MoveTo(Mouse.Hit.p) end
-    end
+RunService.Heartbeat:Connect(function()
+    local hrp = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if S.Fly and hrp then
+        local bv = hrp:FindFirstChild("FlyVel") or Instance.new("BodyVelocity", hrp)
+        bv.Name = "FlyVel"; bv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
+        local dir = Vector3.zero
+        if UIS:IsKeyDown(Enum.KeyCode.W) then dir += Camera.CFrame.LookVector end
+        if UIS:IsKeyDown(Enum.KeyCode.S) then dir -= Camera.CFrame.LookVector end
+        bv.Velocity = dir * S.FlySpeed; hrp.Velocity = Vector3.zero
+    elseif hrp and hrp:FindFirstChild("FlyVel") then hrp.FlyVel:Destroy() end
 end)
 
-UIS.InputBegan:Connect(function(i,g)
-    if not g and i.KeyCode==Enum.KeyCode.RightShift then
-        SG.Enabled=not SG.Enabled
-    end
+UIS.InputBegan:Connect(function(i, g)
+    if not g and i.KeyCode == Enum.KeyCode.RightShift then SG.Enabled = not SG.Enabled end
 end)
 
--- CLOSE
-Close.MouseButton1Click:Connect(function()
-    circle:Remove()
-    SG:Destroy()
-end)
-
-print("Sys otimizado MAX")
+Tabs["Combate"].P.Visible = true
+Tabs["Combate"].B.BackgroundColor3 = Color3.fromRGB(0, 255, 150)
