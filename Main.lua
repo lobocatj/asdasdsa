@@ -279,15 +279,17 @@ task.spawn(function()
                 pcall(function()
                     local head = p.Character:FindFirstChild("Head")
                     if head and Settings.Hitbox.HeadOn then
-                        head.Size = Vector3.new(Settings.Hitbox.HeadSize, Settings.Hitbox.HeadSize, Settings.Hitbox.HeadSize)
-                        head.Transparency = Settings.Hitbox.HeadVis and 0.5 or 1
-                    end
+    head.Size = Vector3.new(Settings.Hitbox.HeadSize, Settings.Hitbox.HeadSize, Settings.Hitbox.HeadSize)
+    head.Transparency = Settings.Hitbox.HeadVis and 0.5 or 1
+    head.CanCollide = false
+end
 
                     local hrp = p.Character:FindFirstChild("HumanoidRootPart")
                     if hrp and Settings.Hitbox.BodyOn then
-                        hrp.Size = Vector3.new(Settings.Hitbox.BodySize, Settings.Hitbox.BodySize, Settings.Hitbox.BodySize)
-                        hrp.Transparency = Settings.Hitbox.BodyVis and 0.5 or 1
-                    end
+    hrp.Size = Vector3.new(Settings.Hitbox.BodySize, Settings.Hitbox.BodySize, Settings.Hitbox.BodySize)
+    hrp.Transparency = Settings.Hitbox.BodyVis and 0.5 or 1
+    hrp.CanCollide = false
+end
                 end)
             end
         end
@@ -318,9 +320,10 @@ local function ResetHitbox()
 
             local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
             if hrp then
-                hrp.Size = Vector3.new(2,2,1)
-                hrp.Transparency = 1
-            end
+    hrp.Size = Vector3.new(2,2,1)
+    hrp.Transparency = 1
+    hrp.CanCollide = true
+end
         end)
     end
 end
