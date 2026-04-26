@@ -243,7 +243,11 @@ local function CreateTab(name)
         btn.MouseButton1Click:Connect(callback)
     end
 
-    function Elements:CreateInput(text, callback)
+    box.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        callback(box.Text)
+    end
+end)
         local frame = Instance.new("Frame", ContentFrame)
         frame.Size = UDim2.new(1, 0, 0, 30)
         frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
