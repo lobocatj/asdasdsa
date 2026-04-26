@@ -295,15 +295,23 @@ end
         end
 
         local char = Player.Character
-        if char and Settings.Hitbox.SmallSelf then
-            pcall(function()
-                local hrp = char:FindFirstChild("HumanoidRootPart")
-                if hrp then
-                    hrp.Size = Vector3.new(1.5, 1.5, 1.5)
-                    hrp.Transparency = 1
-                end
-            end)
+        local char = Player.Character
+if char then
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        
+        if Settings.Hitbox.SmallSelf then
+            hrp.Size = Vector3.new(1.5, 1.5, 1.5)
+            hrp.Transparency = 1
+        else
+            hrp.Massless = false
+            hrp.Size = Vector3.new(2, 2, 1)
+            hrp.Transparency = 0
+            hrp.CanCollide = true
         end
+
+    end
+end
 
         task.wait(0.5)
     end
