@@ -13,11 +13,22 @@ local VirtualUser = game:GetService("VirtualUser")
 local Player = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local Mouse = Player:GetMouse()
+local DefaultWalkSpeed = 16
 
+Player.CharacterAdded:Connect(function(char)
+    local hum = char:WaitForChild("Humanoid")
+    DefaultWalkSpeed = hum.WalkSpeed
+end)
+if Player.Character then
+    local hum = Player.Character:FindFirstChildOfClass("Humanoid")
+    if hum then
+        DefaultWalkSpeed = hum.WalkSpeed
+    end
+end
 -- [[ ESTADO GLOBAL E CONEXÕES ]]
 local Settings = {
     Running = true,
-    Hitbox = { HeadOn = false, HeadSize = 2, HeadVis = true, BodyOn = false, BodySize = 2, BodyVis = true, SmallSelf = false },
+    Hitbox = { HeadOn = false, HeadSize = 2, HeadVis = true, BodyOn = false, BodySize = 2, BodyVis = true, },
     Trigger = { On = false, Team = true, Delay = 0 },
     Aim = { On = false, Part = "Head", Smooth = 0.1, Fov = 200, Team = true },
     Move = { SpeedOn = false, Speed = 16, JumpOn = false, Jump = 50, Fly = false, FlySpeed = 50, Noclip = false },
@@ -168,7 +179,7 @@ local function CreateTab(name)
     if #Tabs == 1 then ContentFrame.Visible = true TabBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 50) end
 
     local Elements = {}
-    
+    Elements.Frame = ContentFrame
     function Elements:CreateToggle(text, callback)
         local frame = Instance.new("Frame", ContentFrame)
         frame.Size = UDim2.new(1, 0, 0, 30)
@@ -242,36 +253,36 @@ local function CreateTab(name)
         btn.Font = Enum.Font.Code
         btn.MouseButton1Click:Connect(callback)
     end
+function Elements:CreateInput(text, callback)
+    local frame = Instance.new("Frame", ContentFrame)
+    frame.Size = UDim2.new(1, 0, 0, 30)
+    frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    frame.BorderSizePixel = 0
 
-    box.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        callback(box.Text)
-    end
+    local lbl = Instance.new("TextLabel", frame)
+    lbl.Size = UDim2.new(0.5, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 10, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = text
+    lbl.TextColor3 = Color3.fromRGB(200, 200, 200)
+    lbl.Font = Enum.Font.Code
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    local box = Instance.new("TextBox", frame)
+    box.Size = UDim2.new(0.4, 0, 0, 20)
+    box.Position = UDim2.new(0.6, -10, 0, 5)
+    box.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+    box.TextColor3 = Color3.fromRGB(255, 255, 255)
+    box.Text = ""
+    box.Font = Enum.Font.Code
+
+box.FocusLost:Connect(function()
+    callback(box.Text)
 end)
-        local frame = Instance.new("Frame", ContentFrame)
-        frame.Size = UDim2.new(1, 0, 0, 30)
-        frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-        frame.BorderSizePixel = 0
-        local lbl = Instance.new("TextLabel", frame)
-        lbl.Size = UDim2.new(0.5, 0, 1, 0)
-        lbl.Position = UDim2.new(0, 10, 0, 0)
-        lbl.BackgroundTransparency = 1
-        lbl.Text = text
-        lbl.TextColor3 = Color3.fromRGB(200, 200, 200)
-        lbl.Font = Enum.Font.Code
-        lbl.TextXAlignment = Enum.TextXAlignment.Left
-        local box = Instance.new("TextBox", frame)
-        box.Size = UDim2.new(0.4, 0, 0, 20)
-        box.Position = UDim2.new(0.6, -10, 0, 5)
-        box.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-        box.TextColor3 = Color3.fromRGB(255, 255, 255)
-        box.Text = ""
-        box.Font = Enum.Font.Code
-        box.FocusLost:Connect(function() callback(box.Text) end)
-    end
-
-    return Elements
 end
+return Elements
+end
+        
 
 -- [[ LÓGICA CORE (ENGINES) ]]
 
@@ -298,24 +309,7 @@ end
             end
         end
 
-        local char = Player.Character
-        local char = Player.Character
-if char then
-    local hrp = char:FindFirstChild("HumanoidRootPart")
-    if hrp then
-        
-        if Settings.Hitbox.SmallSelf then
-            hrp.Size = Vector3.new(1.5, 1.5, 1.5)
-            hrp.Transparency = 1
-        else
-            hrp.Massless = false
-            hrp.Size = Vector3.new(2, 2, 1)
-            hrp.Transparency = 0
-            hrp.CanCollide = true
-        end
-
-    end
-end
+       
 
         task.wait(0.5)
     end
@@ -333,7 +327,7 @@ local function ResetHitbox()
             local hrp = p.Character and p.Character:FindFirstChild("HumanoidRootPart")
             if hrp then
     hrp.Size = Vector3.new(2,2,1)
-    hrp.Transparency = 1
+    hrp.Transparency = 0
     hrp.CanCollide = true
 end
         end)
@@ -398,12 +392,13 @@ AddCon(RunService.Stepped, function()
         local char = Player.Character
         local hum = char and char:FindFirstChildOfClass("Humanoid")
 
+if hum and Settings.Move.SpeedOn then
+    hum.WalkSpeed = Settings.Move.Speed
+end
         if hum then
-            if Settings.Move.SpeedOn then
-                hum.WalkSpeed = Settings.Move.Speed
-            else
-                hum.WalkSpeed = 16
-            end
+           
+
+            
 
             if not hum:GetAttribute("DefaultJump") then
                 hum:SetAttribute("DefaultJump", hum.JumpPower)
@@ -430,13 +425,21 @@ AddCon(RunService.Stepped, function()
             end
         end
 
-        if char then
-            for _, v in pairs(char:GetDescendants()) do
-                if v:IsA("BasePart") then
-                    v.CanCollide = not Settings.Move.Noclip
-                end
-            end
+       if char then
+    for _, v in pairs(char:GetDescendants()) do
+        if v:IsA("BasePart") then
+            v.CanCollide = not Settings.Move.Noclip
+
+            if Settings.Move.Noclip then
+    v.Massless = false
+    v.CanTouch = false
+else
+    v.Massless = false
+    v.CanTouch = true
+end
         end
+    end
+end
     end)
 end)
 
@@ -531,8 +534,8 @@ tHitbox:CreateToggle("Hitbox Corpo", function(v)
     if not v then ResetHitbox() end
 end)
 
-tHitbox:CreateToggle("Diminuir Minha Hitbox", function(v)
-    Settings.Hitbox.SmallSelf = v
+tHitbox:CreateToggle("Anti-Hit", function(v)
+    Settings.Move.Noclip = v
 end)
 
 tHitbox:CreateInput("Tamanho Cabeça", function(txt)
@@ -556,11 +559,33 @@ tCombat:CreateToggle("Trigger Bot", function(v) Settings.Trigger.On = v end)
 tCombat:CreateToggle("God Mode", function(v) Settings.God.On = v if not v then pcall(function() Player.Character.Humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true) end) end end)
 
 local tMove = CreateTab("Movimento")
-tMove:CreateToggle("Ativar Speed", function(v) Settings.Move.SpeedOn = v end)
-tMove:CreateSlider("Velocidade", 16, 300, 16, function(v) Settings.Move.Speed = v end)
+tMove:CreateToggle("Ativar Speed", function(v)
+    Settings.Move.SpeedOn = v
+
+    local char = Player.Character
+    local hum = char and char:FindFirstChildOfClass("Humanoid")
+
+    if hum then
+        if v then
+            hum.WalkSpeed = Settings.Move.Speed
+        else
+            hum.WalkSpeed = DefaultWalkSpeed
+        end
+    end
+end)
+tMove:CreateSlider("Velocidade", 16, 300, 16, function(v)
+    Settings.Move.Speed = v
+
+    if Settings.Move.SpeedOn then
+        local char = Player.Character
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if hum then
+            hum.WalkSpeed = v
+        end
+    end
+end)
 tMove:CreateToggle("Ativar Fly", function(v) Settings.Move.Fly = v end)
 tMove:CreateSlider("Velocidade Fly", 10, 300, 50, function(v) Settings.Move.FlySpeed = v end)
-tMove:CreateToggle("Noclip", function(v) Settings.Move.Noclip = v end)
 tMove:CreateToggle("Ativar Pulo", function(v) 
     Settings.Move.JumpOn = v 
 end)
@@ -599,6 +624,35 @@ end)
 tVisual:CreateSlider("Travar FPS", 5, 240, 60, function(v) if setfpscap then setfpscap(v) end end)
 
 local tWorld = CreateTab("World/Segurança")
+tWorld:CreateButton("Abrir Infinite Yield", function()
+    loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+end)
+tWorld:CreateButton("Freeze All (menos eu)", function()
+    for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+        if p ~= game.Players.LocalPlayer then
+            local char = p.Character
+            if char then
+                for _, v in pairs(char:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.Anchored = true
+                    end
+                end
+            end
+        end
+    end
+end)
+tWorld:CreateButton("Unfreeze All", function()
+    for _, p in pairs(game:GetService("Players"):GetPlayers()) do
+        local char = p.Character
+        if char then
+            for _, v in pairs(char:GetDescendants()) do
+                if v:IsA("BasePart") then
+                    v.Anchored = false
+                end
+            end
+        end
+    end
+end)
 tWorld:CreateButton("Server Hop", function()
     local Servers = HttpService:JSONDecode(game:HttpGet("https://games.roblox.com/v1/games/" .. game.PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"))
     for _, s in pairs(Servers.data) do if s.playing < s.maxPlayers and s.id ~= game.JobId then TeleportService:TeleportToPlaceInstance(game.PlaceId, s.id, Player) break end end
@@ -610,22 +664,57 @@ tWorld:CreateToggle("Auto-Leave Staff", function(v) Settings.Sec.AntiStaff = v e
 local tWay = CreateTab("Waypoints")
 local WpContainer = tWay.Frame -- Acessando o frame diretamente
 local WaypointButtons = {}
-
 local function RefreshWaypoints()
     for _, btn in pairs(WaypointButtons) do btn:Destroy() end
     WaypointButtons = {}
     for name, cf in pairs(Settings.Waypoints) do
-        local btn = Instance.new("TextButton", WpContainer)
-        btn.Size = UDim2.new(1, 0, 0, 30) btn.BackgroundColor3 = Color3.fromRGB(0, 120, 215) btn.BorderSizePixel = 0
-        btn.Text = "TP: " .. name btn.TextColor3 = Color3.new(1,1,1) btn.Font = Enum.Font.Code
-        btn.MouseButton1Click:Connect(function()
-            if Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-                Player.Character.HumanoidRootPart.Velocity = Vector3.zero
-                Player.Character.HumanoidRootPart.CFrame = cf + Vector3.new(0,3,0)
-            end
-        end)
-        table.insert(WaypointButtons, btn)
-    end
+    
+    local frame = Instance.new("Frame", WpContainer)
+    frame.Size = UDim2.new(1, 0, 0, 30)
+    frame.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    frame.BorderSizePixel = 0
+
+    local lbl = Instance.new("TextLabel", frame)
+    lbl.Size = UDim2.new(0.5, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 10, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = name
+    lbl.TextColor3 = Color3.new(1,1,1)
+    lbl.Font = Enum.Font.Code
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    local tpBtn = Instance.new("TextButton", frame)
+    tpBtn.Size = UDim2.new(0, 50, 0, 20)
+    tpBtn.Position = UDim2.new(0.6, 0, 0.5, -10)
+    tpBtn.BackgroundColor3 = Color3.fromRGB(0,120,215)
+    tpBtn.Text = "TP"
+    tpBtn.TextColor3 = Color3.new(1,1,1)
+    tpBtn.Font = Enum.Font.Code
+
+    tpBtn.MouseButton1Click:Connect(function()
+        local char = Player.Character
+        if char and char:FindFirstChild("HumanoidRootPart") then
+            local hrp = char.HumanoidRootPart
+            hrp.Velocity = Vector3.zero
+            hrp.CFrame = cf + Vector3.new(0,3,0)
+        end
+    end)
+
+    local delBtn = Instance.new("TextButton", frame)
+    delBtn.Size = UDim2.new(0, 50, 0, 20)
+    delBtn.Position = UDim2.new(0.8, 0, 0.5, -10)
+    delBtn.BackgroundColor3 = Color3.fromRGB(200,50,50)
+    delBtn.Text = "DEL"
+    delBtn.TextColor3 = Color3.new(1,1,1)
+    delBtn.Font = Enum.Font.Code
+
+    delBtn.MouseButton1Click:Connect(function()
+        Settings.Waypoints[name] = nil
+        RefreshWaypoints()
+    end)
+
+    table.insert(WaypointButtons, frame)
+end
 end
 
 tWay:CreateInput("Nome do Local", function(txt)
@@ -643,7 +732,15 @@ tWay:CreateInput("Nome do Local", function(txt)
 
     RefreshWaypoints()
 end)
+Player.CharacterAdded:Connect(function(char)
+    task.wait(1)
 
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if hrp then
+        hrp.CanCollide = true
+        hrp.Transparency = 0
+    end
+end)
 -- [[ SISTEMA DE KILL SWITCH (X BUTTON) ]]
 CloseBtn.MouseButton1Click:Connect(function()
     Settings.Running = false
