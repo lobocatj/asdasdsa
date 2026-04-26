@@ -629,10 +629,19 @@ local function RefreshWaypoints()
 end
 
 tWay:CreateInput("Nome do Local", function(txt)
-    if txt ~= "" and Player.Character and Player.Character:FindFirstChild("HumanoidRootPart") then
-        Settings.Waypoints[txt] = Player.Character.HumanoidRootPart.CFrame
-        RefreshWaypoints()
-    end
+    local name = tostring(txt):gsub("^%s*(.-)%s*$", "%1")
+
+    if name == "" then return end
+
+    local char = Player.Character
+    if not char then return end
+
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
+
+    Settings.Waypoints[name] = hrp.CFrame
+
+    RefreshWaypoints()
 end)
 
 -- [[ SISTEMA DE KILL SWITCH (X BUTTON) ]]
